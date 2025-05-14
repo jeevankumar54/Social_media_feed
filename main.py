@@ -16,7 +16,7 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 ACCESS_TOKEN_EXPIRES_MINUTES = 60
 
-manager = LoginManager(secret=".", token_url="/login", use_cookie=True)
+manager = LoginManager(secret=SECRET_KEY, token_url="/login", use_cookie=True)
 manager.cookie_name = "auth"
 
 @manager.user_loader()
@@ -70,7 +70,7 @@ def get_login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "title": "FriendConnect - Login"})
 
 @app.post("/login")
-def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(OAuth2PasswordRequestForm)):
+def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(username=form_data.username, password=form_data.password)
     if not user:
         return templates.TemplateResponse("login.html", {"request": request, "title": "FriendConnect - Login", "invalid": True}, status_code=status.HTTP_401_UNAUTHORIZED)
@@ -93,5 +93,11 @@ def not_authenticated_exception_handler(request, exception):
 app.add_exception_handler(NotAuthenticatedException, not_authenticated_exception_handler)
 
 @app.get("/home")
-def home(user:User=Depends(manager)):
+def home(user: User = Depends(manager)):
     return user
+
+@app.get("/logout")
+def logout():
+    response = RedirectResponse("/")
+    manager.set_cookie(response, None)
+    return response
